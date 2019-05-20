@@ -39,7 +39,25 @@ minecraft {
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
 }
 
+def grpcVersion = '1.20.0'
+def protobufVersion = '3.7.1'
+def protocVersion = protobufVersion
+
+configurations {
+    shade
+    compile.extendsFrom shade
+}
+
 dependencies {
+    shade ("io.grpc:grpc-protobuf:${grpcVersion}") {
+        exclude group:'com.google.guava'
+    }
+    shade ("io.grpc:grpc-stub:${grpcVersion}") {
+        exclude group:'com.google.guava'
+    }
+    shade ("io.grpc:grpc-netty-shaded:${grpcVersion}") {
+        exclude group:'com.google.guava'
+    }
     // you may put jars on which you depend on in ./libs
     // or you may define them like so..
     //compile "some.group:artifact:version:classifier"
@@ -63,6 +81,12 @@ dependencies {
 
 }
 
+jar {
+    configurations.shade.each {dep -> from(project.zipTree(dep)) {
+        exclude "MATA-INF","META-INF/**"
+    }}
+}
+
 processResources {
     // this will ensure that this task is redone when the versions change.
     inputs.property "version", project.version
@@ -79,5 +103,19 @@ processResources {
     // copy everything else except the mcmod.info
     from(sourceSets.main.resources.srcDirs) {
         exclude 'mcmod.info'
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protocVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins { grpc {}}
     }
 }

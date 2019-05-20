@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package forgegrpc;
+
+option java_package = "com.github.tony84727.proto";
+
+message Message {
+    string sender = 1;
+    string content = 2;
+}
+
+service Chat {
+    rpc Connect(stream Message) returns (stream Message);
+}
