@@ -1,14 +1,14 @@
 [
 {
-  "modid": "examplemod",
-  "name": "Example Mod",
-  "description": "Example placeholder mod.",
+  "modid": "forgegrpc",
+  "name": "Forge GRPC",
+  "description": "A forge mod to add gRPC API to server/client",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",
   "updateUrl": "",
-  "authorList": ["ExampleDude"],
-  "credits": "The Forge and FML guys, for making this example",
+  "authorList": ["tony84727"],
+  "credits": "",
   "logoFile": "",
   "screenshots": [],
   "dependencies": []
