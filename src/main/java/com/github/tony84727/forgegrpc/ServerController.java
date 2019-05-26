@@ -3,11 +3,11 @@ package com.github.tony84727.forgegrpc;
 import com.github.tony84727.forgegrpc.service.Chat;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -70,9 +70,13 @@ public class ServerController
     		server.shutdown();
 		}
     	side = Side.CLIENT;
-    	final EntityPlayer p = Minecraft.getMinecraft().player;
-    	server = getServerBuilder().addService(Chat.getInstance(logger, (message) ->
-			Minecraft.getMinecraft().player.sendChatMessage(message)
+    	server = getServerBuilder().addService(Chat.getInstance(logger, (message) -> {
+    		final EntityPlayerSP player = FMLClientHandler.instance().getClientPlayerEntity();
+    		if (player == null) {
+    			return;
+			}
+    		player.sendChatMessage(message);
+		}
 		)).build();
     	startServer();
 	}
