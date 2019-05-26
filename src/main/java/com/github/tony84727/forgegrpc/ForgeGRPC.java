@@ -23,7 +23,7 @@ public class ForgeGRPC {
     @Mod.EventHandler
     public static void onServerStart(FMLServerStartingEvent e) {
         serverThread = new Thread(() -> {
-            final Server server = ServerBuilder.forPort(30000).addService(new Chat(e.getServer())).build();
+            final Server server = ServerBuilder.forPort(30000).addService(Chat.getInstance(e.getServer())).build();
         	try {
                 server.start();
                 e.getServer().sendMessage(new TextComponentString("gRPC enabled"));

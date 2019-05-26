@@ -2,6 +2,7 @@ package com.github.tony84727.forgegrpc.service;
 
 import com.github.tony84727.proto.ChatGrpc;
 import com.github.tony84727.proto.ChatOuterClass;
+import io.grpc.Server;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.event.ServerChatEvent;
@@ -16,8 +17,17 @@ public class Chat extends ChatGrpc.ChatImplBase
 {
 	private final MinecraftServer server;
 	private final ConcurrentLinkedQueue<StreamObserver<ChatOuterClass.Message>> observers = new ConcurrentLinkedQueue<>();
-	public Chat(MinecraftServer server) {
+	private Chat(MinecraftServer server) {
 		this.server = server;
+	}
+
+	private static Chat instance;
+
+	public static Chat getInstance(MinecraftServer server) {
+		if (instance == null) {
+			instance = new Chat(server);
+		}
+		return instance;
 	}
 
 	@Override
@@ -35,6 +45,7 @@ public class Chat extends ChatGrpc.ChatImplBase
 			@Override
 			public void onError(Throwable t)
 			{
+				observers.remove(responseObserver);
 			}
 
 			@Override
@@ -51,10 +62,17 @@ public class Chat extends ChatGrpc.ChatImplBase
 		observers.clear();
 	}
 
-	@SubscribeEvent
-	public void onChat(ServerChatEvent event) {
+	private void onChat(ServerChatEvent event) {
 		final ChatOuterClass.Message message = ChatOuterClass.Message.newBuilder().setSender(event.getUsername()).setContent(event.getMessage()).build();
 		observers.forEach(l -> l.onNext(message));
+	}
+
+	@SubscribeEvent
+	public static void onChatEvent(ServerChatEvent event) {
+		if (instance == null) {
+			return;
+		}
+		instance.onChat(event);
 	}
 
 }
