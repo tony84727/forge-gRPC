@@ -2,30 +2,34 @@ package com.github.tony84727.forgegrpc.service;
 
 import com.github.tony84727.proto.ChatGrpc;
 import com.github.tony84727.proto.ChatOuterClass;
-import io.grpc.Server;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.TextComponentString;
+import io.grpc.stub.StreamObserver;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Mod.EventBusSubscriber
 public class Chat extends ChatGrpc.ChatImplBase
 {
-	private final MinecraftServer server;
+	public interface Chatter {
+		void sendMessage(String message);
+	}
+
+	private final Chatter chatter;
 	private final ConcurrentLinkedQueue<StreamObserver<ChatOuterClass.Message>> observers = new ConcurrentLinkedQueue<>();
-	private Chat(MinecraftServer server) {
-		this.server = server;
+
+	private Chat(Logger logger,Chatter chatter) {
+		this.chatter = chatter;
 	}
 
 	private static Chat instance;
 
-	public static Chat getInstance(MinecraftServer server) {
+	public static Chat getInstance(Logger logger,Chatter chatter) {
 		if (instance == null) {
-			instance = new Chat(server);
+			instance = new Chat(logger,chatter);
 		}
 		return instance;
 	}
@@ -39,7 +43,7 @@ public class Chat extends ChatGrpc.ChatImplBase
 			@Override
 			public void onNext(ChatOuterClass.Message value)
 			{
-				server.sendMessage(new TextComponentString(String.format("<%s> %s",value.getSender(),value.getContent())));
+				chatter.sendMessage(String.format("<%s> %s",value.getSender(),value.getContent()));
 			}
 
 			@Override
@@ -57,22 +61,26 @@ public class Chat extends ChatGrpc.ChatImplBase
 		};
 	}
 
-	public void close() {
-		observers.forEach(l -> l.onCompleted());
-		observers.clear();
-	}
-
-	private void onChat(ServerChatEvent event) {
-		final ChatOuterClass.Message message = ChatOuterClass.Message.newBuilder().setSender(event.getUsername()).setContent(event.getMessage()).build();
-		observers.forEach(l -> l.onNext(message));
+	private void onChat(String sender, String message) {
+		final ChatOuterClass.Message protoMessage = ChatOuterClass.Message.newBuilder().setSender(sender).setContent(message).build();
+		observers.forEach(l -> l.onNext(protoMessage));
 	}
 
 	@SubscribeEvent
-	public static void onChatEvent(ServerChatEvent event) {
+	public static void onServerChatEvent(ServerChatEvent event) {
 		if (instance == null) {
 			return;
 		}
-		instance.onChat(event);
+		instance.onChat(event.getUsername(), event.getMessage());
+	}
+
+	@SubscribeEvent
+	public static void onClientChatEvent(ClientChatReceivedEvent event) {
+		if (instance == null) {
+			return;
+		}
+
+		instance.onChat("",event.getMessage().getFormattedText());
 	}
 
 }
