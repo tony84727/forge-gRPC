@@ -19,7 +19,7 @@ public class Chat extends ChatGrpc.ChatImplBase
 	}
 
 	private final Chatter chatter;
-	private final ConcurrentLinkedQueue<StreamObserver<ChatOuterClass.Message>> observers = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<StreamObserver<ChatOuterClass.ChatEvent>> observers = new ConcurrentLinkedQueue<>();
 
 	private Chat(Logger logger,Chatter chatter) {
 		this.chatter = chatter;
@@ -35,7 +35,7 @@ public class Chat extends ChatGrpc.ChatImplBase
 	}
 
 	@Override
-	public StreamObserver<ChatOuterClass.Message> connect(StreamObserver<ChatOuterClass.Message> responseObserver)
+	public StreamObserver<ChatOuterClass.Message> connect(StreamObserver<ChatOuterClass.ChatEvent> responseObserver)
 	{
 		observers.add(responseObserver);
 		return new StreamObserver<ChatOuterClass.Message>()
@@ -43,7 +43,7 @@ public class Chat extends ChatGrpc.ChatImplBase
 			@Override
 			public void onNext(ChatOuterClass.Message value)
 			{
-				chatter.sendMessage(String.format("<%s> %s",value.getSender(),value.getContent()));
+				chatter.sendMessage(String.format(value.getContent()));
 			}
 
 			@Override
@@ -62,7 +62,7 @@ public class Chat extends ChatGrpc.ChatImplBase
 	}
 
 	private void onChat(String sender, String message) {
-		final ChatOuterClass.Message protoMessage = ChatOuterClass.Message.newBuilder().setSender(sender).setContent(message).build();
+		final ChatOuterClass.ChatEvent protoMessage = ChatOuterClass.ChatEvent.newBuilder().setSender(sender).setContent(message).build();
 		observers.forEach(l -> l.onNext(protoMessage));
 	}
 
