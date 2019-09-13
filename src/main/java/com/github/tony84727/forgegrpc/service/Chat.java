@@ -15,13 +15,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Chat extends ChatGrpc.ChatImplBase
 {
 	private final MinecraftServer server;
-	private final ConcurrentLinkedQueue<StreamObserver<ChatOuterClass.Message>> observers = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<StreamObserver<ChatOuterClass.ChatEvent>> observers = new ConcurrentLinkedQueue<>();
 	public Chat(MinecraftServer server) {
 		this.server = server;
 	}
 
 	@Override
-	public StreamObserver<ChatOuterClass.Message> connect(StreamObserver<ChatOuterClass.Message> responseObserver)
+	public StreamObserver<ChatOuterClass.Message> connect(StreamObserver<ChatOuterClass.ChatEvent> responseObserver)
 	{
 		observers.add(responseObserver);
 		return new StreamObserver<ChatOuterClass.Message>()
@@ -29,7 +29,7 @@ public class Chat extends ChatGrpc.ChatImplBase
 			@Override
 			public void onNext(ChatOuterClass.Message value)
 			{
-				server.sendMessage(new TextComponentString(String.format("<%s> %s",value.getSender(),value.getContent())));
+				server.sendMessage(new TextComponentString(value.getContent()));
 			}
 
 			@Override
@@ -53,8 +53,8 @@ public class Chat extends ChatGrpc.ChatImplBase
 
 	@SubscribeEvent
 	public void onChat(ServerChatEvent event) {
-		final ChatOuterClass.Message message = ChatOuterClass.Message.newBuilder().setSender(event.getUsername()).setContent(event.getMessage()).build();
-		observers.forEach(l -> l.onNext(message));
+		final ChatOuterClass.ChatEvent chat = ChatOuterClass.ChatEvent.newBuilder().setSender(event.getUsername()).setContent(event.getMessage()).build();
+		observers.forEach(l -> l.onNext(chat));
 	}
 
 }

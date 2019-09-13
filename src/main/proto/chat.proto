@@ -7,10 +7,14 @@ package forgegrpc;
 option java_package = "com.github.tony84727.proto";
 
 message Message {
+    string content = 1;
+}
+
+message ChatEvent {
     string sender = 1;
     string content = 2;
 }
 
 service Chat {
-    rpc Connect(stream Message) returns (stream Message);
+    rpc Connect(stream Message) returns (stream ChatEvent);
 }
